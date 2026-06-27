@@ -50,8 +50,9 @@ Keeps the [bmorcelli Launcher](https://github.com/bmorcelli/Launcher) as the boo
 menu and runs NeoDeck as an app:
 
 1. Flash the Launcher for the T-Deck Plus once (its merged release bin at `0x0`).
-2. Copy `NeoDeck.bin` (an app-only `firmware.bin`) onto a **FAT32 / MBR** SD card.
-3. In the Launcher open **SD**, select `NeoDeck.bin`, choose **Install**.
+2. Copy the app-only `firmware.bin` into the **`downloads/`** folder on a
+   **FAT32 / MBR** SD card, named **`neodeck.bin`**.
+3. In the Launcher open **SD → downloads**, select `neodeck.bin`, choose **Install**.
 4. Hold **select / trackball at power-on** to return to the Launcher (or enable
    *Boot to Launcher* in its settings).
 
