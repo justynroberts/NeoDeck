@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="320" viewBox="0 0 480 320">
+  <rect width="480" height="320" fill="#05070a"/>
+  <!-- soft accent glow -->
+  <circle cx="240" cy="120" r="150" fill="#00FF33" opacity="0.05"/>
+  <!-- terminal window emblem -->
+  <rect x="168" y="34" width="144" height="104" rx="14" fill="#0E1216" stroke="#00FF33" stroke-width="3"/>
+  <rect x="176" y="42" width="128" height="16" rx="5" fill="#063d10"/>
+  <circle cx="188" cy="50" r="4" fill="#FA2424"/>
+  <circle cx="202" cy="50" r="4" fill="#FFA500"/>
+  <circle cx="216" cy="50" r="4" fill="#00FF33"/>
+  <polyline points="190,74 212,94 190,114" fill="none" stroke="#00FF33" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="224" y="105" width="40" height="9" rx="2" fill="#00FFFF"/>
+  <!-- wordmark -->
+  <text x="240" y="208" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" font-weight="bold" font-size="60">
+    <tspan fill="#00FF33">Deck</tspan><tspan fill="#00FFFF">SSH</tspan>
+  </text>
+  <text x="240" y="240" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" font-size="17" letter-spacing="3" fill="#9aa0a6">SECURE SHELL · ON-DEVICE AI</text>
+  <text x="240" y="286" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" font-size="13" letter-spacing="2" fill="#4f5358">FOR THE LILYGO T-DECK PLUS</text>
+</svg>

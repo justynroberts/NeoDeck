@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NeoDeck &mdash; T-Deck Plus SSH client</title>
+  <meta name="description" content="NeoDeck: a full-featured SSH client firmware for the LilyGo T-Deck Plus. Flash it from your browser." />
+  <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+  <style>
+    :root { --grn:#00ff66; --grn-d:#00b050; --grn-dd:#004d22; --bg:#000; }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; background:var(--bg); color:var(--grn);
+      font-family:"Spline Sans Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+      line-height:1.6; padding:0 18px 80px;
+    }
+    .wrap { max-width:760px; margin:0 auto; }
+    header { text-align:center; padding:54px 0 10px; }
+    h1 { font-size:46px; margin:0; letter-spacing:6px; text-shadow:0 0 14px var(--grn-d); }
+    .sub { color:var(--grn-d); margin-top:6px; letter-spacing:2px; }
+    h2 { color:var(--grn); border-bottom:1px solid var(--grn-dd); padding-bottom:6px; margin-top:42px; }
+    a { color:var(--grn); }
+    code, pre {
+      background:#020e06; border:1px solid var(--grn-dd); color:var(--grn);
+      border-radius:6px;
+    }
+    code { padding:1px 6px; }
+    pre { padding:12px 14px; overflow:auto; }
+    .flash { text-align:center; margin:34px 0; }
+    .panel { border:1px solid var(--grn-dd); border-radius:10px; padding:18px 22px; margin:18px 0; background:#03130a; }
+    .note { color:var(--grn-d); font-size:14px; }
+    ol li, ul li { margin:6px 0; }
+    .kbd { border:1px solid var(--grn-d); border-radius:4px; padding:0 6px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    @media (max-width:620px){ .grid{ grid-template-columns:1fr; } h1{font-size:34px;} }
+    esp-web-install-button { --esp-tools-button-color:#000; --esp-tools-button-text-color:var(--grn); }
+    .btnfallback { color:var(--grn-d); font-size:13px; margin-top:10px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>NEODECK</h1>
+    <div class="sub">SSH client firmware &middot; LilyGo T-Deck Plus &middot; ESP32-S3</div>
+  </header>
+
+  <p>NeoDeck turns the LilyGo <strong>T-Deck Plus</strong> into a handheld SSH terminal:
+     stored connections, a real cursor-addressable VT100/xterm screen, an on-device
+     Claude AI assistant, and a Matrix-styled UI. Flash it straight from this page.</p>
+
+  <div class="flash panel">
+    <h2 style="border:0;margin-top:0">Flash from your browser</h2>
+    <esp-web-install-button manifest="./manifest.json">
+      <button slot="activate" style="font:inherit;padding:12px 26px;background:#03130a;color:var(--grn);border:1px solid var(--grn);border-radius:8px;cursor:pointer;letter-spacing:1px;">
+        &#9889; INSTALL NEODECK
+      </button>
+      <span slot="unsupported">Your browser can't flash over USB.</span>
+      <span slot="not-allowed">You are not allowed to use this on HTTP &mdash; open the HTTPS version.</span>
+    </esp-web-install-button>
+    <div class="btnfallback">
+      Works in <strong>Chrome</strong> or <strong>Edge</strong> on desktop (Web Serial).
+      Plug the T-Deck in over USB-C, click Install, pick the serial port.
+    </div>
+  </div>
+
+  <div class="note panel">
+    <strong>Heads-up:</strong> the browser installer writes a full image at <code>0x0</code>,
+    so it <em>replaces whatever firmware is on the board</em> (including the bmorcelli
+    Launcher, if present). Prefer to keep the Launcher? Use the SD-card method below instead.
+  </div>
+
+  <h2>Two ways to run NeoDeck</h2>
+  <div class="grid">
+    <div class="panel">
+      <h3>A &middot; Direct (this page)</h3>
+      <ol>
+        <li>Connect the T-Deck Plus by USB-C.</li>
+        <li>Click <strong>Install NeoDeck</strong> above.</li>
+        <li>Select the serial port, confirm erase + install.</li>
+        <li>It reboots straight into NeoDeck.</li>
+      </ol>
+    </div>
+    <div class="panel">
+      <h3>B &middot; Via the Launcher (SD)</h3>
+      <ol>
+        <li>Copy <a href="firmware/NeoDeck-merged.bin">the app bin</a> to a FAT32 SD card.</li>
+        <li>Insert the SD, open <strong>SD</strong> in the
+            <a href="https://github.com/bmorcelli/Launcher">bmorcelli Launcher</a>.</li>
+        <li>Select <code>NeoDeck.bin</code> &rarr; <strong>Install</strong>.</li>
+        <li>Hold <span class="kbd">select / trackball</span> at power-on to get back to the Launcher.</li>
+      </ol>
+      <div class="note">For path B use the app-only <code>firmware.bin</code> from a build, not the merged image.</div>
+    </div>
+  </div>
+
+  <h2>First run</h2>
+  <ol>
+    <li>On the menu open <strong>WiFi</strong>, pick your 2.4&nbsp;GHz network, enter the password.
+        (ESP32 has no 5&nbsp;GHz radio.)</li>
+    <li>Open <strong>Connections &rarr; New connection</strong>, fill in host / user / port and a
+        password or key, then <em>Save</em>.</li>
+    <li>Select the connection to open the terminal. Trackball click opens the
+        <strong>Session</strong> menu (Ctrl-C, Tab, Esc, Ctrl-D, scrollback, AI, clear, disconnect).</li>
+    <li>Optionally set an Anthropic API key in <strong>Settings</strong> for the on-device AI assistant.</li>
+  </ol>
+  <p class="note">Settings are stored on the SD card when present (so they survive launching in and
+     out of NeoDeck), otherwise in internal flash.</p>
+
+  <h2>Build it yourself</h2>
+  <pre>pio run                 # compile
+pio run -t upload       # flash over USB-C
+pio device monitor      # serial @115200</pre>
+  <p>Full source, hardware notes and architecture:
+     <a href="https://github.com/justynroberts/NeoDeck">github.com/justynroberts/NeoDeck</a>.</p>
+
+  <p class="note" style="text-align:center;margin-top:50px">
+    NeoDeck is a personal handheld tool &mdash; secrets are stored in plaintext on the device.
+    Treat it accordingly.
+  </p>
+</div>
+</body>
+</html>

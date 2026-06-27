@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300">
+  <rect width="1200" height="300" fill="#05070a"/>
+  <circle cx="250" cy="150" r="220" fill="#00FF33" opacity="0.05"/>
+  <!-- emblem -->
+  <rect x="120" y="78" width="200" height="144" rx="18" fill="#0E1216" stroke="#00FF33" stroke-width="4"/>
+  <rect x="132" y="90" width="176" height="20" rx="6" fill="#063d10"/>
+  <circle cx="148" cy="100" r="5.5" fill="#FA2424"/>
+  <circle cx="168" cy="100" r="5.5" fill="#FFA500"/>
+  <circle cx="188" cy="100" r="5.5" fill="#00FF33"/>
+  <polyline points="150,128 182,156 150,184" fill="none" stroke="#00FF33" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="196" y="146" width="56" height="12" rx="3" fill="#00FFFF"/>
+  <!-- text block -->
+  <text x="380" y="150" font-family="DejaVu Sans Mono, monospace" font-weight="bold" font-size="80">
+    <tspan fill="#00FF33">Deck</tspan><tspan fill="#00FFFF">SSH</tspan>
+  </text>
+  <text x="384" y="196" font-family="DejaVu Sans Mono, monospace" font-size="26" letter-spacing="2" fill="#9aa0a6">A full-featured SSH client for the LilyGo T-Deck Plus</text>
+  <text x="384" y="232" font-family="DejaVu Sans Mono, monospace" font-size="20" letter-spacing="1" fill="#5a5f65">stored connections · public-key auth · on-device Claude AI · color terminal</text>
+  <rect x="384" y="252" width="430" height="3" fill="#00FF33" opacity="0.5"/>
+</svg>

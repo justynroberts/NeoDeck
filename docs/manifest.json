@@ -1,0 +1,14 @@
+{
+  "name": "NeoDeck",
+  "version": "0.7.0",
+  "home_assistant_domain": null,
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        { "path": "firmware/NeoDeck-merged.bin", "offset": 0 }
+      ]
+    }
+  ]
+}

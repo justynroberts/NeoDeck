@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="150" viewBox="0 0 280 150">
+  <rect width="280" height="150" fill="#000000"/>
+  <!-- terminal window emblem -->
+  <rect x="96" y="6" width="88" height="62" rx="9" fill="#0E1216" stroke="#00FF33" stroke-width="2"/>
+  <rect x="101" y="11" width="78" height="10" rx="3" fill="#063d10"/>
+  <circle cx="108" cy="16" r="2.6" fill="#FA2424"/>
+  <circle cx="117" cy="16" r="2.6" fill="#FFA500"/>
+  <circle cx="126" cy="16" r="2.6" fill="#00FF33"/>
+  <!-- prompt chevron + cursor -->
+  <polyline points="110,33 122,44 110,55" fill="none" stroke="#00FF33" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="130" y="50" width="22" height="5" rx="1" fill="#00FFFF"/>
+  <!-- wordmark -->
+  <text x="140" y="104" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" font-weight="bold" font-size="34">
+    <tspan fill="#00FF33">Deck</tspan><tspan fill="#00FFFF">SSH</tspan>
+  </text>
+  <text x="140" y="126" text-anchor="middle" font-family="DejaVu Sans Mono, monospace" font-size="11" letter-spacing="2" fill="#8a8a8a">SECURE SHELL · ON-DEVICE AI</text>
+  <!-- accent dot row -->
+  <g>
+    <circle cx="116" cy="140" r="2.4" fill="#00FF33"/>
+    <circle cx="128" cy="140" r="2.4" fill="#00FFFF"/>
+    <circle cx="140" cy="140" r="2.4" fill="#3a6cff"/>
+    <circle cx="152" cy="140" r="2.4" fill="#b06cff"/>
+    <circle cx="164" cy="140" r="2.4" fill="#FFA500"/>
+  </g>
+</svg>

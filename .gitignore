@@ -1,0 +1,16 @@
+.pio/
+.vscode/
+*.bin
+*.elf
+*.map
+# but DO ship the web-flasher image (lives under docs/ for GitHub Pages)
+!docs/firmware/*.bin
+# local SD staging copies
+sdcard-staging/
+NeoDeck.bin
+# Local secrets — never commit real keys/creds
+data/config.json
+data/keys/*
+!data/keys/.gitkeep
+data/ca/*
+!data/ca/.gitkeep

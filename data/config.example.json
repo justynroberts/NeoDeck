@@ -1,0 +1,16 @@
+{
+  "wifiSsid": "your-wifi",
+  "wifiPass": "your-wifi-password",
+  "anthropicKey": "sk-ant-...",
+  "aiModel": "claude-opus-4-8",
+  "envs": [
+    {
+      "name": "homelab", "host": "192.168.1.50", "port": 22,
+      "user": "pi", "auth": 0, "pass": "raspberry"
+    },
+    {
+      "name": "vps", "host": "example.com", "port": 22,
+      "user": "root", "auth": 1, "keyName": "id_ed25519", "keyPass": ""
+    }
+  ]
+}

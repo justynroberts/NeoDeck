@@ -1,0 +1,8 @@
+# Put the Claude API root CA here as anthropic.pem to enable validated TLS.
+# Generate it (PEM of the chain's root) with:
+#
+#   openssl s_client -showcerts -connect api.anthropic.com:443 </dev/null 2>/dev/null \
+#     | awk '/-----BEGIN/,/-----END/{print}' > anthropic.pem
+#
+# Then flash the filesystem:  pio run -t uploadfs
+# Without this file the AI client falls back to insecure TLS (with a warning).

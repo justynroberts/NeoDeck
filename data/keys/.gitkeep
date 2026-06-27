@@ -1,0 +1,3 @@
+# Put SSH private keys (PEM) here, one per file, e.g. data/keys/id_ed25519
+# Then flash the filesystem:  pio run -t uploadfs
+# They appear in the connection editor's "Key:" picker.
