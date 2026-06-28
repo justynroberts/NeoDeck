@@ -3,11 +3,12 @@
 *.bin
 *.elf
 *.map
-# but DO ship the web-flasher image (lives under docs/ for GitHub Pages)
+# local SD staging copies (anchored to repo root; case matters on macOS ignorecase)
+/sdcard-staging/
+/NeoDeck.bin
+# DO ship the web-flasher images (lives under docs/ for GitHub Pages) — keep this
+# exception LAST so nothing above re-ignores it
 !docs/firmware/*.bin
-# local SD staging copies
-sdcard-staging/
-NeoDeck.bin
 # Local secrets — never commit real keys/creds
 data/config.json
 data/keys/*
