@@ -65,9 +65,15 @@ struct SshEnv {
 };
 
 // Everything persisted to LittleFS as /config.json.
+struct WifiProfile {
+  String ssid;
+  String pass;
+};
+
 struct AppConfig {
   String wifiSsid;
   String wifiPass;
+  std::vector<WifiProfile> wifiNetworks; // first item has highest priority
   String anthropicKey;                 // Claude API key for the AI assistant
   String aiModel = "claude-opus-4-8";  // or "claude-haiku-4-5" for speed
   std::vector<SshEnv> envs;

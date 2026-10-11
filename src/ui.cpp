@@ -126,6 +126,9 @@ static const uint16_t kPal[16] = {
 static String aiQuestion, aiAnswer, aiLastCmd;
 static bool   aiFromTerminal = false;
 static int    aiScroll = 0;
+static String aiTranscript;  // readable recent messages, RAM only
+static int    aiTurns = 0;
+static bool   aiWebForQuestion = false; // Explicit permission, reset after each query
 
 // Generic text editor
 static String tiTitle, tiBuf;
@@ -221,6 +224,37 @@ static std::vector<String> wrap(const String& s, int cols) {
   }
   out.push_back(line);
   return out;
+}
+
+// Word-aware wrapping for chat: keep whole words where possible, split
+// unusually long words/URLs to ensure nothing is rendered beyond the edge.
+static std::vector<String> aiWrap(const String& input, int cols) {
+  std::vector<String> lines;
+  String line, word;
+  auto emitWord = [&]() {
+    while (word.length()) {
+      if (line.length() && (int)(line.length() + word.length() + 1) > cols) {
+        lines.push_back(line); line = "";
+      }
+      int available = cols - (int)line.length() - (line.length() ? 1 : 0);
+      if (available <= 0) { lines.push_back(line); line = ""; available = cols; }
+      int n = min((int)word.length(), available);
+      if (line.length()) line += ' ';
+      line += word.substring(0, n);
+      word.remove(0, n);
+      if (word.length()) { lines.push_back(line); line = ""; }
+    }
+  };
+  for (size_t i = 0; i < input.length(); ++i) {
+    char c = input[i];
+    if (c == ' ' || c == '\n' || c == '\r') {
+      emitWord();
+      if (c == '\n') { lines.push_back(line); line = ""; }
+    } else word += c;
+  }
+  emitWord();
+  lines.push_back(line);
+  return lines;
 }
 
 // Colorful main menu: each row is a rounded card with an accent strip, a
@@ -814,32 +848,50 @@ static void drawSessionMenu() {
   }
 }
 
+// Draw a bounded, wrapped text entry field. Show the newest lines when full.
 static void drawAiInput() {
   header("AI Assistant");
   clearBody();
-  tft.setTextFont(1);
+  fontSmall();
   tft.setTextColor(C_MUTED, C_BG);
-  tft.drawString(AI::configured() ? "Ask anything. Enter to send."
-                                  : "Set an API key in Settings first.", 8, HDR_H + 6);
-  tft.fillRect(8, HDR_H + 24, 304, 22, C_PANEL);
+  tft.drawString(AI::configured() ? "Enter=send  right=toggle WEB" :
+                                   "Set API key in Settings", 8, HDR_H + 5);
+  tft.setTextColor(aiWebForQuestion ? C_WARN : C_MUTED, C_BG);
+  tft.drawString(aiWebForQuestion ? "WEB ON (up to 1 paid search)" : "WEB OFF (no search charge)", 8, HDR_H + 18);
+  if (aiTurns) {
+    tft.setTextColor(C_CYAN, C_BG);
+    tft.drawString("Follow-up: " + String(aiTurns) + " previous turns", 8, HDR_H + 29);
+  }
+  const int top = HDR_H + 43, height = 148;
+  tft.fillRect(8, top, 304, height, C_PANEL);
   tft.setTextColor(C_ACCENT, C_PANEL);
-  tft.drawString(aiQuestion + "_", 12, HDR_H + 30);
+  auto lines = aiWrap(aiQuestion + "_", 48); // 48 * 6px fits within 296px
+  const int visible = (height - 12) / 11;
+  int first = max(0, (int)lines.size() - visible);
+  for (int i = first, y = top + 6; i < (int)lines.size(); ++i, y += 11)
+    tft.drawString(lines[i], 13, y);
+  tft.setTextColor(C_MUTED, C_BG);
+  tft.drawString("Text wraps; Backspace deletes", 8, 230);
 }
 
 static void drawAiResult() {
-  header("Claude");
+  header("Claude - chat");
   clearBody();
-  tft.setTextFont(1);
+  fontSmall();
   tft.setTextColor(C_TEXT, C_BG);
-  auto lines = wrap(aiAnswer, 52);
-  int rows = (240 - HDR_H - 16) / 9;
-  for (int i = 0; i + aiScroll < (int)lines.size() && i < rows; i++) {
-    tft.drawString(lines[i + aiScroll], 6, HDR_H + 4 + i * 9);
-  }
-  tft.setTextColor(C_MUTED, C_BG);
-  String hint = aiFromTerminal ? "click=run first line  left=back  up/dn=scroll"
-                               : "left=back  up/dn=scroll";
-  tft.drawString(hint, 6, 228);
+  String shown = aiTranscript;
+  if (aiAnswer == "Asking Claude...") shown += "Asking Claude...";
+  if (shown.isEmpty()) shown = aiAnswer;
+  auto lines = aiWrap(shown, 50); // 50 * 6 = 300px
+  const int rows = (225 - HDR_H - 4) / 10;
+  const int maxScroll = max(0, (int)lines.size() - rows);
+  aiScroll = constrain(aiScroll, 0, maxScroll);
+  for (int i = 0; i < rows && i + aiScroll < (int)lines.size(); ++i)
+    tft.drawString(lines[i + aiScroll], 6, HDR_H + 4 + i * 10);
+  tft.fillRect(0, 225, 320, 15, C_PANEL);
+  tft.setTextColor(C_MUTED, C_PANEL);
+  tft.drawString(aiFromTerminal ? "Enter=run  right=follow-up  left=SSH" :
+                                  "Enter=follow-up  left=menu  up/dn", 5, 228);
 }
 
 static void drawHostKey() {
@@ -917,11 +969,15 @@ static void drawWifi() {
     if (net.secure) Icons::lock(292, y + (ch - 16) / 2, C_MUTED);
     fontUi();
     tft.setTextColor(s ? C_TEXT : C_MUTED, s ? C_PANEL2 : C_PANEL);
-    tft.drawString(net.ssid, 40, y + (ch - 13) / 2);
+    tft.drawString(net.ssid.substring(0, 33), 40, y + (ch - 13) / 2);
+    if (WifiMgr::saved(net.ssid)) {
+      tft.setTextColor(C_ACCENT, s ? C_PANEL2 : C_PANEL);
+      tft.drawString("*", 275, y + 5);
+    }
   }
   fontSmall();
   tft.setTextColor(C_MUTED, C_BG);
-  tft.drawString("click=join  r=rescan  left=back", 8, 230);
+  tft.drawString("*=saved  click=join  p=priority  d=forget  r=scan", 5, 230);
 }
 
 static void wifiConnectNow() {
@@ -933,7 +989,7 @@ static void wifiConnectNow() {
   tft.drawString(gConfig.wifiSsid + "…", 12, HDR_H + 50);
   present();                          // show it before the blocking connect
 
-  bool ok = WifiMgr::connect(12000);
+  bool ok = WifiMgr::connectSaved(gConfig.wifiSsid, 12000);
   wifiMsg = ok ? "Connected" : ("Failed: " + WifiMgr::lastError());
   dirty = true;
 }
@@ -1040,7 +1096,10 @@ static void connectTo(int i) {
 
 static void runAi() {
   // Blocking call — show a placeholder first so the user sees feedback.
-  aiAnswer = "Asking Claude…"; screen = Screen::AI_RESULT; aiScroll = 0;
+  const String prompt = aiQuestion;
+  aiAnswer = "Asking Claude...";
+  screen = Screen::AI_RESULT;
+  aiScroll = 0;
   dirty = true; render();
 
   String ctx;
@@ -1048,7 +1107,19 @@ static void runAi() {
     int from = max(0, (int)term.size() - 18);
     for (int i = from; i < (int)term.size(); i++) ctx += term[i].t + "\n";
   }
-  aiAnswer = AI::ask(aiQuestion, ctx);
+  const bool useWeb = aiWebForQuestion;
+  aiWebForQuestion = false; // Every new question must opt in again.
+  aiAnswer = AI::ask(prompt, ctx, useWeb);
+  if (!aiAnswer.startsWith("ERR:")) {
+    if (aiTranscript.length() > 7000) aiTranscript.remove(0, aiTranscript.length() - 4000);
+    aiTranscript += "You: " + prompt + "\nClaude: " + aiAnswer + "\n\n";
+    ++aiTurns;
+  } else {
+    aiTranscript += "You: " + prompt + "\n" + aiAnswer + "\n\n";
+  }
+  aiQuestion = "";
+  auto lines = aiWrap(aiTranscript, 50);
+  aiScroll = max(0, (int)lines.size() - ((225 - HDR_H - 4) / 10));
   // First line is treated as a runnable command suggestion.
   int nl = aiAnswer.indexOf('\n');
   aiLastCmd = (nl < 0) ? aiAnswer : aiAnswer.substring(0, nl);
@@ -1064,7 +1135,8 @@ static void handleMenu(const InputEvent& ev) {
   if (ev.type == EvType::SELECT || ev.ch == '\r') {
     switch (menuSel) {
       case 0: screen = Screen::ENV_LIST; listSel = 0; break;
-      case 1: aiFromTerminal = false; aiQuestion = ""; screen = Screen::AI_INPUT; break;
+      case 1: aiFromTerminal = false; aiQuestion = ""; aiTranscript = "";
+              aiTurns = 0; AI::resetConversation(); screen = Screen::AI_INPUT; break;
       case 2: wifiMsg = ""; screen = Screen::WIFI; startWifiScan(); break;
       case 3: screen = Screen::SETTINGS; setSel = 0; break;
       case 4: screen = Screen::ABOUT; break;
@@ -1159,7 +1231,8 @@ static void handleSessionMenu(const InputEvent& ev) {
   if (ev.type == EvType::SELECT || ev.ch == '\r') {
     screen = Screen::TERMINAL; termDirty = true;       // default: back to shell
     switch (sessSel) {
-      case 0: aiFromTerminal = true; aiQuestion = ""; screen = Screen::AI_INPUT; break;
+      case 0: aiFromTerminal = true; aiQuestion = ""; aiTranscript = "";
+              aiTurns = 0; AI::resetConversation(); screen = Screen::AI_INPUT; break;
       case 1: if (aiLastCmd.length()) { gSsh.send(aiLastCmd); gSsh.send("\n"); } break;
       case 2: gSsh.send("\x03"); break;                // Ctrl-C
       case 3: gSsh.send("\t");   break;                // Tab
@@ -1174,6 +1247,7 @@ static void handleSessionMenu(const InputEvent& ev) {
 }
 
 static void handleAiInput(const InputEvent& ev) {
+  if (ev.type == EvType::RIGHT) { aiWebForQuestion = !aiWebForQuestion; dirty = true; return; }
   if (ev.type == EvType::LEFT) { screen = aiFromTerminal ? Screen::TERMINAL : Screen::MENU; dirty = termDirty = true; return; }
   if (ev.type == EvType::CHAR) {
     if (ev.ch == '\r') { if (aiQuestion.length() && AI::configured()) runAi(); }
@@ -1183,12 +1257,26 @@ static void handleAiInput(const InputEvent& ev) {
 }
 
 static void handleAiResult(const InputEvent& ev) {
-  if (ev.type == EvType::UP)   { aiScroll = max(0, aiScroll - 1); dirty = true; }
-  if (ev.type == EvType::DOWN) { aiScroll++; dirty = true; }
+  const int rows = (225 - HDR_H - 4) / 10;
+  const int total = (int)aiWrap(aiTranscript, 50).size();
+  if (ev.type == EvType::UP)   { aiScroll = max(0, aiScroll - 2); dirty = true; }
+  if (ev.type == EvType::DOWN) { aiScroll = min(max(0, total - rows), aiScroll + 2); dirty = true; }
   if (ev.type == EvType::LEFT || ev.ch == '`') {
-    screen = aiFromTerminal ? Screen::TERMINAL : Screen::AI_INPUT; dirty = termDirty = true;
+    screen = aiFromTerminal ? Screen::TERMINAL : Screen::MENU;
+    dirty = termDirty = true;
+    return;
   }
-  if ((ev.type == EvType::SELECT || ev.ch == '\r') && aiFromTerminal && aiLastCmd.length()) {
+  // SSH overlay keeps click/Enter for the existing 'run command' action.
+  // Trackball right opens a follow-up there; main AI uses Enter or click.
+  if (ev.type == EvType::RIGHT ||
+      (!aiFromTerminal && (ev.type == EvType::SELECT || ev.ch == '\r'))) {
+    aiWebForQuestion = false;
+    aiQuestion = "";
+    screen = Screen::AI_INPUT;
+    dirty = true;
+    return;
+  }
+  if (aiFromTerminal && (ev.type == EvType::SELECT || ev.ch == '\r') && aiLastCmd.length()) {
     gSsh.send(aiLastCmd); gSsh.send("\n");
     screen = Screen::TERMINAL; termDirty = true;
   }
@@ -1205,27 +1293,46 @@ static void handleSettings(const InputEvent& ev) {
       case 1: startEdit("WiFi Pass", gConfig.wifiPass, true,  Screen::SETTINGS, [](const String& v){ gConfig.wifiPass = v; savedFlash = Storage::save() ? millis() : 0; }); break;
       case 2: startEdit("API Key",   gConfig.anthropicKey, true, Screen::SETTINGS, [](const String& v){ gConfig.anthropicKey = v; savedFlash = Storage::save() ? millis() : 0; }); break;
       case 3: startEdit("AI Model",  gConfig.aiModel, false, Screen::SETTINGS, [](const String& v){ gConfig.aiModel = v; savedFlash = Storage::save() ? millis() : 0; }); break;
-      case 4: savedFlash = Storage::save() ? millis() : 0; WifiMgr::connect(); break;
+      case 4: WifiMgr::saveNetwork(gConfig.wifiSsid, gConfig.wifiPass); savedFlash = Storage::save() ? millis() : 0; WifiMgr::connect(); break;
     }
     dirty = true;
   }
 }
 
 static void handleWifi(const InputEvent& ev) {
-  int n = wifiNets.size();
+  int n = (int)wifiNets.size();
   if (ev.type == EvType::UP)   { wifiSel = max(0, wifiSel - 1); dirty = true; }
-  if (ev.type == EvType::DOWN) { wifiSel = min(n - 1, wifiSel + 1); dirty = true; }
-  if (ev.type == EvType::LEFT || ev.ch == '`') { screen = Screen::MENU; dirty = true; }
-  if (ev.ch == 'r') { startWifiScan(); }
-  if ((ev.type == EvType::SELECT || ev.ch == '\r') && n > 0 && wifiSel < n) {
-    WifiMgr::Net net = wifiNets[wifiSel];
-    bool samePass = (net.ssid == gConfig.wifiSsid);
+  if (ev.type == EvType::DOWN) { wifiSel = min(max(0, n - 1), wifiSel + 1); dirty = true; }
+  if (ev.type == EvType::LEFT || ev.ch == '`') { screen = Screen::MENU; dirty = true; return; }
+  if (ev.ch == 'r') { startWifiScan(); return; }
+  if (n <= 0 || wifiSel >= n) return;
+  const WifiMgr::Net net = wifiNets[wifiSel];
+  if (ev.ch == 'd') {
+    if (WifiMgr::removeNetwork(net.ssid)) wifiMsg = "Forgot " + net.ssid;
+    else wifiMsg = "Not a saved network";
+    dirty = true; return;
+  }
+  if (ev.ch == 'p') {
+    if (WifiMgr::prioritiseNetwork(net.ssid)) wifiMsg = "Preferred: " + net.ssid;
+    else wifiMsg = "Save network first";
+    dirty = true; return;
+  }
+  if (ev.type == EvType::SELECT || ev.ch == '\r') {
+    if (WifiMgr::saved(net.ssid)) {
+      bool ok = WifiMgr::connectSaved(net.ssid);
+      wifiMsg = ok ? "Connected" : ("Failed: " + WifiMgr::lastError());
+      dirty = true; return;
+    }
     gConfig.wifiSsid = net.ssid;
     if (net.secure) {
-      startEdit("WiFi pass: " + net.ssid, samePass ? gConfig.wifiPass : "", true, Screen::WIFI,
-                [](const String& v) { gConfig.wifiPass = v; Storage::save(); wifiConnectNow(); });
+      startEdit("WiFi pass: " + net.ssid, "", true, Screen::WIFI,
+        [ssid = net.ssid](const String& pass) {
+          if (!WifiMgr::saveNetwork(ssid, pass)) { wifiMsg = "Save failed / max 10"; dirty = true; return; }
+          wifiConnectNow();
+        });
     } else {
-      gConfig.wifiPass = ""; Storage::save(); wifiConnectNow();
+      if (!WifiMgr::saveNetwork(net.ssid, "")) { wifiMsg = "Save failed / max 10"; dirty = true; return; }
+      wifiConnectNow();
     }
   }
 }
@@ -1343,7 +1450,7 @@ void touch(int x, int y) {
       if (y >= 200 && y <= 222) { hkSel = (x < 160) ? 0 : 1; handleHostKey({EvType::SELECT, 0}); }
       break;
     case Screen::TERMINAL:    handleTerminal({EvType::SELECT, 0}); break;  // tap = session menu
-    case Screen::AI_RESULT:   handleAiResult({EvType::LEFT, 0});   break;  // tap = back
+    case Screen::AI_RESULT:   handleAiResult({EvType::RIGHT, 0});  break; // tap = follow-up
     case Screen::ABOUT:       screen = Screen::MENU; dirty = true; break;
     default: break;   // AI_INPUT / TEXT_INPUT need the keyboard
   }
@@ -1353,6 +1460,7 @@ void touch(int x, int y) {
 //  Per-loop tick
 // ---------------------------------------------------------------------------
 void tick() {
+  WifiMgr::tick();
   if (screen == Screen::SPLASH) {
     if (millis() - splashAt > 3000) { screen = Screen::MENU; dirty = true; }
     else                            { dirty = true; }   // keep the rain animating

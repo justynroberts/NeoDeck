@@ -9,7 +9,9 @@ namespace AI {
   // Ask a question. `context` is optional recent terminal output that gets
   // folded into the prompt so the model can reason about what's on screen.
   // Returns the assistant's text, or an error string prefixed with "ERR:".
-  String ask(const String& question, const String& context = "");
+  String ask(const String& question, const String& context = "", bool allowWebSearch = false);
+
+  void resetConversation(); // Forget conversation history (new chat).
 
   bool configured();   // true if an API key is set
 }

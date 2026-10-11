@@ -22,6 +22,17 @@ bool load() {
 
   gConfig.wifiSsid     = doc["wifiSsid"]     | "";
   gConfig.wifiPass     = doc["wifiPass"]     | "";
+  gConfig.wifiNetworks.clear();
+  for (JsonObject o : doc["wifiNetworks"].as<JsonArray>()) {
+    WifiProfile p;
+    p.ssid = o["ssid"] | "";
+    p.pass = o["pass"] | "";
+    if (!p.ssid.isEmpty() && gConfig.wifiNetworks.size() < 10)
+      gConfig.wifiNetworks.push_back(p);
+  }
+  // Backwards compatibility with the original one-network config.json.
+  if (gConfig.wifiNetworks.empty() && !gConfig.wifiSsid.isEmpty())
+    gConfig.wifiNetworks.push_back({gConfig.wifiSsid, gConfig.wifiPass});
   gConfig.anthropicKey = doc["anthropicKey"] | "";
   gConfig.aiModel      = doc["aiModel"]      | "claude-opus-4-8";
 
@@ -46,6 +57,12 @@ bool save() {
   JsonDocument doc;
   doc["wifiSsid"]     = gConfig.wifiSsid;
   doc["wifiPass"]     = gConfig.wifiPass;
+  JsonArray networks = doc["wifiNetworks"].to<JsonArray>();
+  for (const WifiProfile& p : gConfig.wifiNetworks) {
+    JsonObject o = networks.add<JsonObject>();
+    o["ssid"] = p.ssid;
+    o["pass"] = p.pass;
+  }
   doc["anthropicKey"] = gConfig.anthropicKey;
   doc["aiModel"]      = gConfig.aiModel;
 
